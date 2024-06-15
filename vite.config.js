@@ -20,7 +20,8 @@ export default defineConfig({
         'https',
         'net',
         'tls',
-        'util'
+        'util',
+        'assert'
       ]
     }
   }
