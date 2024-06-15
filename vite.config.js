@@ -1,17 +1,31 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  server: {
-    host: "::",
-    port: "8080",
-    strictPort: true,
-    clearScreen: false,
-    logLevel: "info",
-    warmup: {
-      clientFiles: ["src/**/*.(js|jsx|ts|tsx|html|css)", "index.html"]
-    },
-  },
   plugins: [react()],
-  base: ""
+  build: {
+    rollupOptions: {
+      external: [
+        'stream',
+        'querystring',
+        'events',
+        'child_process',
+        'fs',
+        'os',
+        'path',
+        'url',
+        'buffer',
+        'crypto',
+        'http',
+        'https',
+        'net',
+        'tls',
+        'util',
+        'assert',
+        'protobufjs/inquire',
+        'google-gax',
+        '@google-cloud/aiplatform'
+      ]
+    }
+  }
 });
