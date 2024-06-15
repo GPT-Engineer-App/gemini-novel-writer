@@ -23,7 +23,8 @@ export default defineConfig({
         'util',
         'assert',
         'protobufjs/inquire',
-        'google-gax'
+        'google-gax',
+        '@google-cloud/aiplatform'
       ]
     }
   }
