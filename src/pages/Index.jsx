@@ -78,4 +78,167 @@ const Index = () => {
   By following these guidelines, you aim to enrich your writing with authenticity and creativity, steering clear of expressions that might render it mundane or derivative. This approach not only enhances the reader's experience but also strengthens your unique voice as a writer.
   `;
 
-  
+  const getBookDetails = () => {
+    const genre = prompt("Enter the genre of the book:");
+    const chapters = parseInt(prompt("Enter the number of chapters:"));
+    const pagesPerChapter = parseInt(prompt("Enter the approximate pages per chapter:"));
+    const subject = prompt("Enter the subject of the book:");
+    const themes = prompt("Enter the themes of the book:");
+    const plotPoints = prompt("Enter any specific plot points:");
+    const characters = prompt("Enter information about the characters:");
+
+    return {
+      genre,
+      chapters,
+      pagesPerChapter,
+      subject,
+      themes,
+      plotPoints,
+      characters
+    };
+  };
+
+  const generateAndRefinePlotPoints = (bookDetails) => {
+    const generationConfig = {
+      'candidateCount': 1,
+      'maxOutputTokens': 150
+    };
+    let response = model.generateContent(
+      `${guidance_content}\nGenerate engaging plot points for a ${bookDetails.genre} book with the following details:\nSubject: ${bookDetails.subject}\nThemes: ${bookDetails.themes}\n`,
+      generationConfig
+    );
+
+    let initialPlotPoints = response.candidates[0].content.text.trim();
+
+    while (true) {
+      const feedback = prompt(`Initial Plot Points:\n${initialPlotPoints}\nPlease provide feedback or type 'continue' to proceed:`);
+      if (feedback.toLowerCase() === "continue") {
+        break;
+      }
+      response = model.generateContent(
+        `${guidance_content}\nGenerate engaging plot points for a ${bookDetails.genre} book with the following details:\nSubject: ${bookDetails.subject}\nThemes: ${bookDetails.themes}\nFeedback: ${feedback}\n`,
+        generationConfig
+      );
+      initialPlotPoints = response.candidates[0].content.text.trim();
+    }
+
+    return initialPlotPoints;
+  };
+
+  const generateAndSelectTitle = (plotPoints) => {
+    const generationConfig = {
+      'candidateCount': 1,
+      'maxOutputTokens': 50
+    };
+    const response = model.generateContent(
+      `${guidance_content}\nGenerate 5 potential titles for a novel with these plot points:\n${plotPoints}`,
+      generationConfig
+    );
+    const titles = response.candidates[0].content.text.trim().split("\n");
+
+    let title = titles[0];
+    if (titles.length > 1) {
+      const choice = parseInt(prompt(`Choose the best title:\n${titles.map((title, index) => `${index + 1}. ${title}`).join("\n")}\nEnter the number of your choice:`)) - 1;
+      title = titles[choice];
+    }
+
+    return title;
+  };
+
+  const generateChapter1 = (plotPoints, title, bookDetails) => {
+    const generationConfig = {
+      'candidateCount': 1,
+      'maxOutputTokens': 500
+    };
+    let response = model.generateContent(
+      `${guidance_content}\nWrite the first chapter of a ${bookDetails.genre} novel titled '${title}', incorporating these plot points:\n${plotPoints}`,
+      generationConfig
+    );
+
+    let chapter1Text = response.candidates[0].content.text.trim();
+
+    while (true) {
+      const feedback = prompt(`Chapter 1:\n${chapter1Text}\nPlease provide feedback or type 'continue' to proceed:`);
+      if (feedback.toLowerCase() === "continue") {
+        break;
+      }
+      response = model.generateContent(
+        `${guidance_content}\nWrite the first chapter of a ${bookDetails.genre} novel titled '${title}', incorporating these plot points:\n${plotPoints}\n\nFeedback: ${feedback}\n`,
+        generationConfig
+      );
+      chapter1Text = response.candidates[0].content.text.trim();
+    }
+
+    return chapter1Text;
+  };
+
+  const generateChapters = (plotPoints, bookDetails, previousChapters) => {
+    const chapters = [];
+    for (let chapterNum = 2; chapterNum <= bookDetails.chapters; chapterNum++) {
+      const previousChaptersText = previousChapters.join("\n\n");
+      const generationConfig = {
+        'candidateCount': 1,
+        'maxOutputTokens': 500
+      };
+      const response = model.generateContent(
+        `${guidance_content}\nContinue the novel with these plot points:\n${plotPoints}\n\nPrevious chapters:\n${previousChaptersText}`,
+        generationConfig
+      );
+      const chapterText = response.candidates[0].content.text.trim();
+      chapters.push(chapterText);
+    }
+
+    return chapters;
+  };
+
+  const saveNovel = (title, chapters) => {
+    const blob = new Blob([`Title: ${title}\n\n${chapters.map((chapter, index) => `Chapter ${index + 1}:\n\n${chapter}\n\n`).join("")}`], { type: "text/plain;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${title}.txt`;
+    link.click();
+  };
+
+  const handleGenerateText = async () => {
+    setIsLoading(true);
+
+    const bookDetails = getBookDetails();
+    const plotPoints = generateAndRefinePlotPoints(bookDetails);
+    const title = generateAndSelectTitle(plotPoints);
+    const chapter1 = generateChapter1(plotPoints, title, bookDetails);
+    const chapters = generateChapters(plotPoints, bookDetails, [chapter1]);
+    saveNovel(title, [chapter1, ...chapters]);
+
+    setNovelText(`Novel '${title}.txt' generated successfully!`);
+    setIsLoading(false);
+  };
+
+  return (
+    <Container centerContent maxW="container.md" height="100vh" display="flex" flexDirection="column" justifyContent="center" alignItems="center">
+      <VStack spacing={4} width="100%">
+        <Heading as="h1" size="xl">Novel Writing App</Heading>
+        <Text fontSize="lg">Leverage Gemini 1.5 Pro's 1 million context window to write your novel.</Text>
+        <Box width="100%">
+          <Textarea
+            value={novelText}
+            onChange={(e) => setNovelText(e.target.value)}
+            placeholder="Start writing your novel here..."
+            size="lg"
+            height="300px"
+          />
+        </Box>
+        <Button
+          colorScheme="teal"
+          size="lg"
+          onClick={handleGenerateText}
+          isLoading={isLoading}
+          loadingText="Generating"
+        >
+          Generate More Text
+        </Button>
+      </VStack>
+    </Container>
+  );
+};
+
+export default Index;
