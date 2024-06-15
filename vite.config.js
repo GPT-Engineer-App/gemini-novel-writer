@@ -21,7 +21,8 @@ export default defineConfig({
         'net',
         'tls',
         'util',
-        'assert'
+        'assert',
+        'protobufjs/inquire'
       ]
     }
   }
