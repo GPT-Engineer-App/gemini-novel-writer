@@ -22,7 +22,8 @@ export default defineConfig({
         'tls',
         'util',
         'assert',
-        'protobufjs/inquire'
+        'protobufjs/inquire',
+        'google-gax'
       ]
     }
   }
